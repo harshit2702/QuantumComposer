@@ -1,4 +1,4 @@
-/* Quantum Composer – React Frontend (MVP v0.2) */
+/* Quantum Composer – React Frontend (Redesigned) */
 
 const { useState, useCallback, useEffect, useRef } = React;
 
@@ -11,8 +11,6 @@ const ROTATION_GATES = ["Rx", "Ry", "Rz"];
 const MULTI_GATES    = ["CX", "CCX"];
 const ALL_GATES      = [...SINGLE_GATES, ...ROTATION_GATES, ...MULTI_GATES];
 
-// When `false` the app will NOT attempt server fallback if client sim fails.
-// Set to `true` to allow falling back to the FastAPI server.
 const USE_SERVER_FALLBACK = false;
 
 const API_URL = "/simulate";
@@ -240,8 +238,154 @@ function Results({ data }) {
   );
 }
 
+// ── Typewriter Effect ──────────────────────────────────────────────
+const TYPEWRITER_WORDS = ["Superposition", "Entanglement", "Interference", "Simulation"];
+function useTypewriter(words, typeSpeed = 100, deleteSpeed = 60, pauseMs = 1800) {
+  const [text, setText] = useState("");
+  const [wordIndex, setWordIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const current = words[wordIndex];
+    let timer;
+    if (!isDeleting && text === current) {
+      timer = setTimeout(() => setIsDeleting(true), pauseMs);
+    } else if (isDeleting && text === "") {
+      setIsDeleting(false);
+      setWordIndex((wordIndex + 1) % words.length);
+    } else {
+      timer = setTimeout(() => {
+        setText(current.substring(0, text.length + (isDeleting ? -1 : 1)));
+      }, isDeleting ? deleteSpeed : typeSpeed);
+    }
+    return () => clearTimeout(timer);
+  }, [text, isDeleting, wordIndex, words, typeSpeed, deleteSpeed, pauseMs]);
+
+  return text;
+}
+
+// ── Hero Section ───────────────────────────────────────────────────
+function HeroSection({ onGetStarted }) {
+  const typed = useTypewriter(TYPEWRITER_WORDS);
+  return (
+    <section className="hero" id="hero">
+      <div className="hero-bg" />
+      <div className="hero-content">
+        <p className="hero-intro">Open-Source Quantum Computing</p>
+        <h1 className="hero-headline">
+          Explore<br />
+          <span className="hero-accent">{typed}<span className="typewriter-cursor" /></span>
+        </h1>
+        <p className="hero-sub">
+          Build, visualize, and simulate quantum circuits right in your browser.
+          No installations. No servers. Pure quantum exploration.
+        </p>
+        <button className="hero-cta" onClick={onGetStarted}>
+          Launch Composer →
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// ── How to Use Section ─────────────────────────────────────────────
+function HowToUse() {
+  return (
+    <div className="page-section" id="howto">
+      <div className="howto-section">
+        <h2>How to Use</h2>
+        <p className="howto-subtitle">Get started with Quantum Composer in minutes</p>
+
+        <div className="howto-grid">
+          <div className="howto-card">
+            <span className="howto-card-icon">1️⃣</span>
+            <h3>Choose Your Qubits</h3>
+            <p>
+              Select 1–4 qubits from the dropdown at the top of the composer.
+              Each qubit starts in the <code>|0⟩</code> state. More qubits = more
+              computational states to explore.
+            </p>
+          </div>
+
+          <div className="howto-card">
+            <span className="howto-card-icon">2️⃣</span>
+            <h3>Place Quantum Gates</h3>
+            <p>
+              Click a gate button (like <code>H</code>, <code>X</code>, <code>CX</code>) then click
+              a cell on the circuit grid to place it. You can also <strong>drag & drop</strong> gates
+              directly onto the grid.
+            </p>
+          </div>
+
+          <div className="howto-card">
+            <span className="howto-card-icon">3️⃣</span>
+            <h3>Simulate & Visualize</h3>
+            <p>
+              Hit <strong>▶ Simulate</strong> to run your circuit. You'll see probability
+              distributions, phase information, and full statevector amplitudes.
+              Enable <strong>Auto</strong> mode for live updates as you build.
+            </p>
+          </div>
+
+          <div className="howto-card">
+            <span className="howto-card-icon">💾</span>
+            <h3>Save & Load Circuits</h3>
+            <p>
+              Save your circuits locally and reload them anytime. Great for
+              experimenting with different configurations or comparing results.
+            </p>
+          </div>
+
+          <div className="howto-card">
+            <span className="howto-card-icon">🖱️</span>
+            <h3>Edit & Remove</h3>
+            <p>
+              <strong>Right-click</strong> any placed gate to remove it.
+              Click an empty cell to place the currently selected gate.
+              Use the <strong>Clear</strong> button to reset the entire circuit.
+            </p>
+          </div>
+
+          <div className="howto-card">
+            <span className="howto-card-icon">🔄</span>
+            <h3>Rotation Gates</h3>
+            <p>
+              Gates like <code>Rx</code>, <code>Ry</code>, <code>Rz</code> prompt you
+              for an angle in radians. Use <code>π/2 ≈ 1.5708</code> or
+              <code>π/4 ≈ 0.7854</code> for common rotations.
+            </p>
+          </div>
+        </div>
+
+        <div className="gate-ref">
+          <h3>Gate Reference</h3>
+          <table className="gate-ref-table">
+            <thead>
+              <tr><th>Gate</th><th>Type</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td className="gate-name">H</td><td>Single</td><td>Hadamard — creates equal superposition</td></tr>
+              <tr><td className="gate-name">X</td><td>Single</td><td>Pauli-X — bit flip (quantum NOT)</td></tr>
+              <tr><td className="gate-name">Y</td><td>Single</td><td>Pauli-Y — bit + phase flip</td></tr>
+              <tr><td className="gate-name">Z</td><td>Single</td><td>Pauli-Z — phase flip</td></tr>
+              <tr><td className="gate-name">S</td><td>Single</td><td>S gate — π/2 phase shift</td></tr>
+              <tr><td className="gate-name">T</td><td>Single</td><td>T gate — π/4 phase shift</td></tr>
+              <tr><td className="gate-name">Rx</td><td>Rotation</td><td>Rotation around X-axis by angle θ</td></tr>
+              <tr><td className="gate-name">Ry</td><td>Rotation</td><td>Rotation around Y-axis by angle θ</td></tr>
+              <tr><td className="gate-name">Rz</td><td>Rotation</td><td>Rotation around Z-axis by angle θ</td></tr>
+              <tr><td className="gate-name">CX</td><td>Multi</td><td>Controlled-NOT (CNOT) — entangles two qubits</td></tr>
+              <tr><td className="gate-name">CCX</td><td>Multi</td><td>Toffoli — 3-qubit controlled-controlled-NOT</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ───────────────────────────────────────────────────────
 function App() {
+  const [activeTab, setActiveTab] = useState("home");
   const [qubitCount, setQubitCount] = useState(2);
   const [grid, setGrid]           = useState(emptyGrid(2));
   const [selectedGate, setGate]   = useState("H");
@@ -374,88 +518,119 @@ function App() {
 
   // ── Render ─────────────────────────────────────────────────────
   return (
-    <div className="app">
-      <header>
-        <h1>⚛ Quantum Composer</h1>
-        <span className="subtitle">MVP v0.2 &mdash; up to {MAX_QUBITS} qubits, {MAX_STEPS} steps</span>
-      </header>
+    <React.Fragment>
+      {/* ── Sticky Nav Bar ── */}
+      <nav className="navbar">
+        <span className="nav-logo" onClick={() => setActiveTab("home")}>⚛ Quantum Composer</span>
+        <ul className="nav-links">
+          <li><button className={`nav-link ${activeTab === "home" ? "active" : ""}`} onClick={() => setActiveTab("home")}>Home</button></li>
+          <li><button className={`nav-link ${activeTab === "composer" ? "active" : ""}`} onClick={() => setActiveTab("composer")}>Composer</button></li>
+          <li><button className={`nav-link ${activeTab === "howto" ? "active" : ""}`} onClick={() => setActiveTab("howto")}>How to Use</button></li>
+        </ul>
+      </nav>
 
-      <div className="controls">
-        <label>Qubits:
-          <select value={qubitCount} onChange={e => changeQubits(+e.target.value)}>
-            {[1,2,3,4].map(n => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </label>
+      {/* ── Home / Hero ── */}
+      {activeTab === "home" && (
+        <HeroSection onGetStarted={() => setActiveTab("composer")} />
+      )}
 
-        <div className="gate-palette">
-          {ALL_GATES.map(g => (
-            <button key={g} className={`gate-btn ${selectedGate === g ? "active" : ""}`}
-              onClick={() => setGate(g)} draggable onDragStart={e => handleDragStart(g, e)} onDragEnd={handleDragEnd}>
-              {g}
-            </button>
-          ))}
+      {/* ── Composer Tab ── */}
+      {activeTab === "composer" && (
+        <div className="page-section">
+          <div className="app">
+            <div className="composer-header">
+              <h1>⚛ Quantum Composer</h1>
+              <span className="subtitle">Up to {MAX_QUBITS} qubits · {MAX_STEPS} steps · Client-side simulation</span>
+            </div>
+
+            <div className="controls">
+              <label>Qubits:
+                <select value={qubitCount} onChange={e => changeQubits(+e.target.value)}>
+                  {[1,2,3,4].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </label>
+
+              <div className="gate-palette">
+                {ALL_GATES.map(g => (
+                  <button key={g} className={`gate-btn ${selectedGate === g ? "active" : ""}`}
+                    onClick={() => setGate(g)} draggable onDragStart={e => handleDragStart(g, e)} onDragEnd={handleDragEnd}>
+                    {g}
+                  </button>
+                ))}
+              </div>
+
+              <label className="auto-toggle" title="Auto-simulate on change (debounced)">
+                <input type="checkbox" checked={autoSim} onChange={e => setAutoSim(e.target.checked)} />
+                Auto
+              </label>
+
+              <button className="icon-btn" onClick={() => setShowSave(true)} title="Save circuit">💾</button>
+              <button className="icon-btn" onClick={() => setShowLoad(true)} title="Load circuit">📂</button>
+              <button className="clear-btn" onClick={clearGrid}>Clear</button>
+              <button className="sim-btn" onClick={() => doSimulate()} disabled={loading}>
+                {loading ? "Running…" : "▶ Simulate"}
+              </button>
+            </div>
+
+            {/* Circuit Grid */}
+            <div className="circuit-grid" style={{ gridTemplateColumns: `60px repeat(${MAX_STEPS}, 1fr)` }}>
+              <div className="grid-header">Wire</div>
+              {Array.from({ length: MAX_STEPS }, (_, c) => <div className="grid-header" key={c}>t{c}</div>)}
+
+              {grid.map((row, ri) => (
+                <React.Fragment key={ri}>
+                  <div className="wire-label">q{ri}</div>
+                  {row.map((cell, ci) => {
+                    let display = "";
+                    let cls = "cell";
+                    if (cell) {
+                      const g = cell.gate;
+                      if (g === "CX" || g === "CCX") {
+                        if (cell.role === "tgt") { display = "⊕"; cls += " cell-target"; }
+                        else { display = "●"; cls += " cell-control"; }
+                      } else if (["Rx","Ry","Rz"].includes(g)) {
+                        display = `${g}(${cell.angle != null ? cell.angle.toFixed(2) : "?"})`;
+                        cls += " cell-rotation";
+                      } else {
+                        display = g;
+                        cls += " cell-gate";
+                      }
+                      cls += " cell-placed";
+                    } else {
+                      cls += " cell-empty";
+                    }
+                    return (
+                      <div key={ci} className={cls + (dragging && !cell ? " drop-ready" : "")}
+                        onClick={() => cell ? null : handleCellClick(ri, ci)}
+                        onContextMenu={e => { e.preventDefault(); removeCell(ri, ci); }}
+                        onDragOver={cell ? undefined : handleDragOver}
+                        onDrop={cell ? undefined : e => handleDrop(ri, ci, e)}
+                        title={cell ? "Right-click to remove" : `Place ${selectedGate} (or drag)`}>
+                        {display}
+                      </div>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
+
+            <p className="hint">Click or drag a gate onto the grid · Right-click to remove</p>
+
+            {error && <div className="error-box">⚠ {error}</div>}
+            <Results data={results} />
+          </div>
         </div>
+      )}
 
-        <label className="auto-toggle" title="Auto-simulate on change (debounced)">
-          <input type="checkbox" checked={autoSim} onChange={e => setAutoSim(e.target.checked)} />
-          Auto
-        </label>
+      {/* ── How to Use Tab ── */}
+      {activeTab === "howto" && <HowToUse />}
 
-        <button className="icon-btn" onClick={() => setShowSave(true)} title="Save circuit">💾</button>
-        <button className="icon-btn" onClick={() => setShowLoad(true)} title="Load circuit">📂</button>
-        <button className="clear-btn" onClick={clearGrid}>Clear</button>
-        <button className="sim-btn" onClick={() => doSimulate()} disabled={loading}>
-          {loading ? "Running…" : "▶ Simulate"}
-        </button>
-      </div>
+      {/* ── Footer ── */}
+      <footer className="site-footer">
+        Quantum Composer · Built for learning & exploration
+      </footer>
 
-      {/* Circuit Grid */}
-      <div className="circuit-grid" style={{ gridTemplateColumns: `60px repeat(${MAX_STEPS}, 1fr)` }}>
-        <div className="grid-header">Wire</div>
-        {Array.from({ length: MAX_STEPS }, (_, c) => <div className="grid-header" key={c}>t{c}</div>)}
-
-        {grid.map((row, ri) => (
-          <React.Fragment key={ri}>
-            <div className="wire-label">q{ri}</div>
-            {row.map((cell, ci) => {
-              let display = "";
-              let cls = "cell";
-              if (cell) {
-                const g = cell.gate;
-                if (g === "CX" || g === "CCX") {
-                  if (cell.role === "tgt") { display = "⊕"; cls += " cell-target"; }
-                  else { display = "●"; cls += " cell-control"; }
-                } else if (["Rx","Ry","Rz"].includes(g)) {
-                  display = `${g}(${cell.angle != null ? cell.angle.toFixed(2) : "?"})`;
-                  cls += " cell-rotation";
-                } else {
-                  display = g;
-                  cls += " cell-gate";
-                }
-                cls += " cell-placed";
-              } else {
-                cls += " cell-empty";
-              }
-              return (
-                <div key={ci} className={cls + (dragging && !cell ? " drop-ready" : "")}
-                  onClick={() => cell ? null : handleCellClick(ri, ci)}
-                  onContextMenu={e => { e.preventDefault(); removeCell(ri, ci); }}
-                  onDragOver={cell ? undefined : handleDragOver}
-                  onDrop={cell ? undefined : e => handleDrop(ri, ci, e)}
-                  title={cell ? "Right-click to remove" : `Place ${selectedGate} (or drag)`}>
-                  {display}
-                </div>
-              );
-            })}
-          </React.Fragment>
-        ))}
-      </div>
-
-      <p className="hint">Click or drag a gate onto the grid. Right-click a cell to remove it.</p>
-
-      {error && <div className="error-box">⚠ {error}</div>}
-      <Results data={results} />
-
+      {/* ── Modals (always available) ── */}
       {modal && modal.type === "angle" && <AngleModal gate={modal.gate} onConfirm={confirmAngle} onCancel={() => setModal(null)} />}
       {modal && modal.type === "multi" && <MultiGateModal gate={modal.gate} qubitCount={qubitCount} onConfirm={confirmMulti} onCancel={() => setModal(null)} />}
       {showSave && <SaveModal onSave={saveCircuit} onCancel={() => setShowSave(false)} />}
@@ -479,7 +654,7 @@ function App() {
           </div>
         </div>
       )}
-    </div>
+    </React.Fragment>
   );
 }
 
