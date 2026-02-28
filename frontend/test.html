@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>QSim Test Harness — Client vs Server</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; padding: 24px; }
+    h1 { font-size: 1.4rem; margin-bottom: 16px; }
+    button#run { padding: 8px 24px; font-size: 0.95rem; cursor: pointer; border: none;
+      background: #238636; color: #fff; border-radius: 6px; margin-bottom: 16px; }
+    button#run:hover { background: #2ea043; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 20px; }
+    th, td { border: 1px solid #30363d; padding: 6px 8px; text-align: left; }
+    th { background: #161b22; }
+    td.pass { background: #0d2818; }
+    td.fail { background: #3d1117; }
+    .summary { font-size: 1rem; margin: 12px 0 20px; }
+    .mono { font-family: 'Cascadia Code', monospace; }
+    .spin { display: inline-block; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+  <script src="quantum-sim.js"></script>
+</head>
+<body>
+  <h1>⚛ Quantum Simulator — Client vs Server Test Harness</h1>
+  <button id="run">Run All Tests</button>
+  <div id="status"></div>
+  <div id="output"></div>
+
+<script>
+"use strict";
+
+// ── Test Cases ─────────────────────────────────────────────────────
+const TESTS = [
+  {
+    name: "Single H on q0 (1 qubit)",
+    qubit_count: 1,
+    program: [{ gate: "h", target: 0 }],
+  },
+  {
+    name: "X gate (1 qubit)",
+    qubit_count: 1,
+    program: [{ gate: "x", target: 0 }],
+  },
+  {
+    name: "Y gate (1 qubit)",
+    qubit_count: 1,
+    program: [{ gate: "y", target: 0 }],
+  },
+  {
+    name: "Z gate (1 qubit)",
+    qubit_count: 1,
+    program: [{ gate: "z", target: 0 }],
+  },
+  {
+    name: "S gate (1 qubit)",
+    qubit_count: 1,
+    program: [{ gate: "h", target: 0 }, { gate: "s", target: 0 }],
+  },
+  {
+    name: "T gate (1 qubit)",
+    qubit_count: 1,
+    program: [{ gate: "h", target: 0 }, { gate: "t", target: 0 }],
+  },
+  {
+    name: "Bell state (H + CX)",
+    qubit_count: 2,
+    program: [
+      { gate: "h", target: 0 },
+      { gate: "cx", control: 0, target: 1 },
+    ],
+  },
+  {
+    name: "GHZ 3-qubit",
+    qubit_count: 3,
+    program: [
+      { gate: "h", target: 0 },
+      { gate: "cx", control: 0, target: 1 },
+      { gate: "cx", control: 0, target: 2 },
+    ],
+  },
+  {
+    name: "Rx(π/4) on q0 (1 qubit)",
+    qubit_count: 1,
+    program: [{ gate: "rx", target: 0, angle: Math.PI / 4 }],
+  },
+  {
+    name: "Ry(π/3) on q0 (1 qubit)",
+    qubit_count: 1,
+    program: [{ gate: "ry", target: 0, angle: Math.PI / 3 }],
+  },
+  {
+    name: "Rz(π/2) on q0 (1 qubit)",
+    qubit_count: 1,
+    program: [{ gate: "rz", target: 0, angle: Math.PI / 2 }],
+  },
+  {
+    name: "CCX (Toffoli) — both controls |1⟩",
+    qubit_count: 3,
+    program: [
+      { gate: "x", target: 0 },
+      { gate: "x", target: 1 },
+      { gate: "ccx", control1: 0, control2: 1, target: 2 },
+    ],
+  },
+  {
+    name: "CCX — one control |0⟩  (no flip)",
+    qubit_count: 3,
+    program: [
+      { gate: "x", target: 0 },
+      { gate: "ccx", control1: 0, control2: 1, target: 2 },
+    ],
+  },
+  {
+    name: "H on all 4 qubits",
+    qubit_count: 4,
+    program: [
+      { gate: "h", target: 0 },
+      { gate: "h", target: 1 },
+      { gate: "h", target: 2 },
+      { gate: "h", target: 3 },
+    ],
+  },
+  {
+    name: "Mixed: H + Ry(π/6) + CX (2 qubits)",
+    qubit_count: 2,
+    program: [
+      { gate: "h", target: 0 },
+      { gate: "ry", target: 1, angle: Math.PI / 6 },
+      { gate: "cx", control: 0, target: 1 },
+    ],
+  },
+  {
+    name: "Deep circuit: 4 gates on 1 qubit",
+    qubit_count: 1,
+    program: [
+      { gate: "h", target: 0 },
+      { gate: "t", target: 0 },
+      { gate: "h", target: 0 },
+      { gate: "s", target: 0 },
+    ],
+  },
+];
+
+// ── Helpers ────────────────────────────────────────────────────────
+const SERVER = "/simulate";
+const TOL = 1e-6;
+
+async function fetchServer(tc) {
+  const t0 = performance.now();
+  const resp = await fetch(SERVER, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ qubit_count: tc.qubit_count, program: tc.program }),
+  });
+  const dt = performance.now() - t0;
+  if (!resp.ok) throw new Error("Server " + resp.status);
+  const body = await resp.json();
+  return { result: body, ms: dt };
+}
+
+function runClient(tc) {
+  const t0 = performance.now();
+  const result = QSim.simulate(tc.qubit_count, tc.program);
+  const dt = performance.now() - t0;
+  return { result, ms: dt };
+}
+
+function compare(client, server) {
+  const n = server.probabilities.length;
+  let maxProbErr = 0, maxReErr = 0, maxImErr = 0;
+  for (let i = 0; i < n; i++) {
+    maxProbErr = Math.max(maxProbErr, Math.abs(client.probabilities[i] - server.probabilities[i]));
+    maxReErr   = Math.max(maxReErr, Math.abs(client.statevector[i].re - server.statevector[i].re));
+    maxImErr   = Math.max(maxImErr, Math.abs(client.statevector[i].im - server.statevector[i].im));
+  }
+  const pass = maxProbErr < TOL && maxReErr < TOL && maxImErr < TOL;
+  return { pass, maxProbErr, maxReErr, maxImErr };
+}
+
+// ── Runner ─────────────────────────────────────────────────────────
+document.getElementById("run").addEventListener("click", async () => {
+  const statusDiv = document.getElementById("status");
+  const outDiv    = document.getElementById("output");
+  statusDiv.innerHTML = '<span class="spin">⏳</span> Running tests…';
+  outDiv.innerHTML = "";
+
+  let passed = 0, failed = 0;
+  const rows = [];
+
+  for (const tc of TESTS) {
+    let clientRes, serverRes, cmp;
+    try {
+      clientRes = runClient(tc);
+    } catch (e) {
+      rows.push(errorRow(tc.name, "Client error: " + e.message));
+      failed++; continue;
+    }
+    try {
+      serverRes = await fetchServer(tc);
+    } catch (e) {
+      rows.push(errorRow(tc.name, "Server error: " + e.message));
+      failed++; continue;
+    }
+    cmp = compare(clientRes.result, serverRes.result);
+    if (cmp.pass) passed++; else failed++;
+    rows.push(resultRow(tc.name, cmp, clientRes.ms, serverRes.ms));
+  }
+
+  outDiv.innerHTML = buildTable(rows);
+  statusDiv.innerHTML = `<span class="summary">`
+    + `<strong>${passed}</strong> passed, <strong>${failed}</strong> failed `
+    + `out of <strong>${TESTS.length}</strong> tests</span>`;
+});
+
+function resultRow(name, cmp, clientMs, serverMs) {
+  const cls = cmp.pass ? "pass" : "fail";
+  return `<tr>
+    <td>${name}</td>
+    <td class="${cls}">${cmp.pass ? "✅ PASS" : "❌ FAIL"}</td>
+    <td class="mono">${clientMs.toFixed(3)}</td>
+    <td class="mono">${serverMs.toFixed(3)}</td>
+    <td class="mono">${cmp.maxProbErr.toExponential(2)}</td>
+    <td class="mono">${cmp.maxReErr.toExponential(2)}</td>
+    <td class="mono">${cmp.maxImErr.toExponential(2)}</td>
+  </tr>`;
+}
+
+function errorRow(name, msg) {
+  return `<tr>
+    <td>${name}</td>
+    <td class="fail">❌ ERROR</td>
+    <td colspan="5">${msg}</td>
+  </tr>`;
+}
+
+function buildTable(rows) {
+  return `<table>
+    <thead><tr>
+      <th>Test</th><th>Result</th>
+      <th>Client (ms)</th><th>Server (ms)</th>
+      <th>Max ΔProb</th><th>Max ΔRe</th><th>Max ΔIm</th>
+    </tr></thead>
+    <tbody>${rows.join("")}</tbody>
+  </table>`;
+}
+</script>
+</body>
+</html>

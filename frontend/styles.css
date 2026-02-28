@@ -1,0 +1,240 @@
+/* Quantum Composer – Styles (MVP v0.2) */
+
+:root {
+  --bg:        #0f1117;
+  --surface:   #1a1d27;
+  --border:    #2a2d3a;
+  --text:      #e0e0e8;
+  --dim:       #8888a0;
+  --accent:    #6c63ff;
+  --accent2:   #00d4aa;
+  --danger:    #ff4d6a;
+  --gate-bg:   #2d3048;
+  --radius:    6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+header { text-align: center; margin-bottom: 24px; }
+header h1 { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+.subtitle { color: var(--dim); font-size: 0.85rem; }
+
+/* ── Controls bar ───────────────────────────────────────────────── */
+.controls {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  margin-bottom: 20px; padding: 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.controls label { font-size: 0.85rem; color: var(--dim); }
+.controls select {
+  margin-left: 6px; padding: 4px 8px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--bg); color: var(--text);
+}
+
+/* Gate palette */
+.gate-palette { display: flex; flex-wrap: wrap; gap: 4px; }
+.gate-btn {
+  padding: 5px 10px; font-size: 0.8rem; font-weight: 600;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--gate-bg); color: var(--text); cursor: grab;
+  transition: all 0.15s;
+}
+.gate-btn:hover { border-color: var(--accent); }
+.gate-btn:active { cursor: grabbing; }
+.gate-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Auto-sim toggle */
+.auto-toggle {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.8rem; color: var(--accent2); cursor: pointer;
+}
+.auto-toggle input { accent-color: var(--accent2); cursor: pointer; }
+
+/* Icon buttons (save/load) */
+.icon-btn {
+  padding: 4px 8px; font-size: 1rem; background: transparent;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; transition: border-color .15s;
+}
+.icon-btn:hover { border-color: var(--accent); }
+
+.clear-btn, .sim-btn {
+  padding: 6px 16px; border: none; border-radius: var(--radius);
+  font-weight: 600; cursor: pointer; font-size: 0.85rem;
+}
+.clear-btn { background: var(--border); color: var(--dim); margin-left: auto; }
+.clear-btn:hover { background: var(--danger); color: #fff; }
+.sim-btn { background: var(--accent2); color: #111; }
+.sim-btn:hover { filter: brightness(1.1); }
+.sim-btn:disabled { opacity: 0.5; cursor: wait; }
+
+/* ── Circuit Grid ───────────────────────────────────────────────── */
+.circuit-grid { display: grid; gap: 2px; margin-bottom: 8px; }
+.grid-header {
+  background: var(--surface); text-align: center; font-size: 0.7rem;
+  color: var(--dim); padding: 6px 0; border-radius: var(--radius);
+}
+.wire-label {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 600; color: var(--accent);
+  background: var(--surface); border-radius: var(--radius);
+}
+
+.cell {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 48px; border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  user-select: none; position: relative;
+}
+.cell-empty { background: var(--surface); }
+.cell-empty:hover { border-color: var(--accent); background: #22253a; }
+
+/* Drag-drop highlight */
+.cell-empty.drop-ready {
+  border-color: var(--accent2);
+  background: rgba(0, 212, 170, 0.08);
+  animation: pulse-border 1s ease-in-out infinite;
+}
+@keyframes pulse-border {
+  0%, 100% { border-color: var(--accent2); }
+  50% { border-color: var(--accent); }
+}
+
+/* Gate placement "pop" animation */
+.cell-placed {
+  animation: gate-pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes gate-pop {
+  0%   { transform: scale(0.4); opacity: 0.3; }
+  60%  { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.cell-gate { background: var(--accent); color: #fff; border-color: var(--accent); }
+.cell-rotation { background: #8b5cf6; color: #fff; border-color: #8b5cf6; font-size: 0.68rem; }
+.cell-control { background: #f59e0b; color: #111; border-color: #f59e0b; font-size: 1.1rem; }
+.cell-target  { background: #10b981; color: #111; border-color: #10b981; font-size: 1.2rem; }
+
+.hint { font-size: 0.75rem; color: var(--dim); text-align: center; margin-bottom: 16px; }
+
+/* ── Error box ──────────────────────────────────────────────────── */
+.error-box {
+  background: #2a1020; border: 1px solid var(--danger); color: var(--danger);
+  padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 0.85rem;
+}
+
+/* ── Results ────────────────────────────────────────────────────── */
+.results {
+  margin-top: 16px; padding: 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.results h2 { font-size: 1.1rem; margin-bottom: 12px; color: var(--accent2); }
+.results h3 { font-size: 0.9rem; margin: 12px 0 8px; color: var(--dim); }
+
+/* Phase legend */
+.phase-legend {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+  font-size: 0.75rem; color: var(--dim);
+}
+.phase-legend-label { font-weight: 600; }
+.phase-swatch { display: flex; align-items: center; gap: 4px; }
+.swatch {
+  display: inline-block; width: 14px; height: 14px;
+  border-radius: 3px; border: 1px solid rgba(255,255,255,0.15);
+}
+.swatch-inline {
+  display: inline-block; width: 10px; height: 10px;
+  border-radius: 2px; margin-right: 4px; vertical-align: middle;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Bar chart */
+.bar-chart {
+  display: flex; align-items: flex-end; gap: 6px; height: 200px; padding: 10px 0;
+}
+.bar-group {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-end; height: 100%;
+}
+.bar {
+  width: 80%; max-width: 48px;
+  border-radius: 4px 4px 0 0; display: flex;
+  align-items: flex-start; justify-content: center;
+  min-height: 2px; position: relative;
+  transition: height 0.3s ease, background 0.3s ease;
+}
+.bar-val {
+  font-size: 0.65rem; color: #fff; position: absolute;
+  top: -16px; white-space: nowrap;
+}
+.bar-label { font-size: 0.7rem; margin-top: 4px; color: var(--dim); font-family: monospace; }
+
+/* Phase table */
+.phase-table { overflow-x: auto; }
+.phase-table table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.phase-table th, .phase-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+.phase-table th { color: var(--dim); font-weight: 600; }
+.phase-table td { font-family: monospace; }
+.phase-pi { font-weight: 600; }
+
+/* ── Modals ─────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 24px; min-width: 280px; max-width: 360px;
+  animation: modal-in 0.2s ease;
+}
+.modal-wide { max-width: 480px; }
+@keyframes modal-in {
+  0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal h3 { margin-bottom: 12px; color: var(--accent); }
+.modal p  { font-size: 0.85rem; color: var(--dim); margin-bottom: 6px; }
+.modal input, .modal select {
+  width: 100%; padding: 8px; margin-bottom: 10px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg); color: var(--text); font-size: 0.9rem;
+}
+.modal label { display: block; margin-bottom: 10px; font-size: 0.85rem; color: var(--dim); }
+.modal label select { margin-top: 4px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.modal-actions button {
+  padding: 6px 16px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--gate-bg); color: var(--text); cursor: pointer; font-size: 0.85rem;
+}
+.modal-actions button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.modal-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.error-hint { color: var(--danger); font-size: 0.8rem; margin: 4px 0; }
+
+/* ── Saved circuits list ────────────────────────────────────────── */
+.saved-list { max-height: 260px; overflow-y: auto; margin: 8px 0; }
+.saved-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px; border-bottom: 1px solid var(--border);
+}
+.saved-name { font-weight: 600; flex: 1; }
+.saved-meta { font-size: 0.75rem; color: var(--dim); }
+.saved-item button {
+  padding: 4px 10px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--gate-bg); color: var(--text); cursor: pointer; font-size: 0.8rem;
+}
+.saved-item button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
